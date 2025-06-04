@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { HelloResolver } from './hello.resolver';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { FileUploadModule } from './file-upload/file-upload.module';
 
 
 
@@ -14,6 +15,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       autoSchemaFile: true, 
       playground: true,     
     }),
+    FileUploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, HelloResolver],
