@@ -6,6 +6,7 @@ import {
   Get,
   Res,
   Redirect,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService } from './file-upload.service';
@@ -135,5 +136,10 @@ export class FileUploadController {
   async uploadFile(@UploadedFile() file: any) {
     await this.fileUploadService.handleFileUpload(file);
   }
-  
+
+  @Get('uploads/:filename')
+  serveFile(@Param('filename') filename: string, @Res() res: Response) {
+    const filePath = join('C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads', filename);
+    return res.sendFile(filePath);
+  }
 }
