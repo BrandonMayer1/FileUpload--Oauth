@@ -15,7 +15,7 @@ import { FileUploadService } from './file-upload.service';
 import { Response, Request } from 'express';
 import { readdirSync } from 'fs';
 import { join } from 'path';
-import { AuthGuard } from '@nestjs/passport';
+import { AccessTokenGuard } from 'src/auth/access-token.guard';
 
 interface RequestWithSession extends Request {
   session: any;
@@ -87,6 +87,7 @@ export class FileUploadController {
   }
 
   @Get('uploads')
+  @UseGuards(AccessTokenGuard)
   getUploadedFiles(@Req() req: RequestWithSession, @Res() res: Response) {
     const uploadsDir = 'C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads';
     const files = readdirSync(uploadsDir);
