@@ -7,19 +7,32 @@ import {
   Res,
   Redirect,
   Param,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService } from './file-upload.service';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import { AuthGuard } from '@nestjs/passport';
+
+interface RequestWithSession extends Request {
+  session: any;
+  isAuthenticated(): this is RequestWithSession;
+  user: any;
+}
 
 @Controller('')
 export class FileUploadController {
   constructor(private readonly fileUploadService: FileUploadService) {}
 
   @Get()
-  getUploadForm(@Res() res: Response) {
+  getUploadForm(@Req() req: RequestWithSession, @Res() res: Response) {
+    const isAuthenticated = req.isAuthenticated?.() || false;
+    console.log('Home page - Auth state:', isAuthenticated);
+    console.log('Session:', req.session);
+    
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -31,6 +44,7 @@ export class FileUploadController {
               max-width: 800px;
               margin: 0 auto;
               padding: 20px;
+              position: relative;
             }
             .upload-container {
               border: 2px dashed #ccc;
@@ -73,7 +87,7 @@ export class FileUploadController {
   }
 
   @Get('uploads')
-  getUploadedFiles(@Res() res: Response) {
+  getUploadedFiles(@Req() req: RequestWithSession, @Res() res: Response) {
     const uploadsDir = 'C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads';
     const files = readdirSync(uploadsDir);
     
@@ -88,6 +102,21 @@ export class FileUploadController {
               max-width: 800px;
               margin: 0 auto;
               padding: 20px;
+              position: relative;
+            }
+            .auth-button {
+              background-color: #4285f4;
+              color: white;
+              padding: 10px 20px;
+              border-radius: 4px;
+              text-decoration: none;
+              display: inline-block;
+              position: absolute;
+              top: 20px;
+              right: 20px;
+            }
+            .auth-button:hover {
+              background-color: #357abd;
             }
             .file-list {
               list-style: none;
@@ -115,6 +144,7 @@ export class FileUploadController {
           </style>
         </head>
         <body>
+          <a href="/auth/logout" class="auth-button">Logout</a>
           <h1>Uploaded Files</h1>
           <ul class="file-list">
             ${files.map(file => `
@@ -130,16 +160,17 @@ export class FileUploadController {
     `);
   }
 
+  @Get('uploads/:filename')
+  serveFile(@Req() req: RequestWithSession, @Param('filename') filename: string, @Res() res: Response) {
+
+    const filePath = join('C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads', filename);
+    return res.sendFile(filePath);
+  }
+
   @Post('')
   @UseInterceptors(FileInterceptor('file'))
   @Redirect('/')
   async uploadFile(@UploadedFile() file: any) {
     await this.fileUploadService.handleFileUpload(file);
-  }
-
-  @Get('uploads/:filename')
-  serveFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = join('C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads', filename);
-    return res.sendFile(filePath);
   }
 }
