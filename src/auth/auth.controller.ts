@@ -1,9 +1,13 @@
 import { Controller, Get, Req, UseGuards, Res, Post } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
+import { AccessTokenGuard } from 'src/auth/access-token.guard';
+import { TokenService } from './token.service';
 
 @Controller('auth')
 export class AuthController {
+  constructor(private tokenService: TokenService) {}
+
   @Get('login')
   @UseGuards(AuthGuard('oauth'))
   async login() {
@@ -14,24 +18,21 @@ export class AuthController {
   @UseGuards(AuthGuard('oauth'))
   async callback(@Req() req, @Res() res: Response) {
     const user = req.user;
+    console.log('OAuth callback received user:', user);
+    
+    // Store the token
+    if (user?.profile?.email) {
+      this.tokenService.storeToken(user.profile.email, user.accessToken);
+    }
 
-    res.json({
-      message: 'Successfully authenticated',
-      accessToken: user.accessToken,
-      user: {
-        email: user.profile?.email,
-        name: user.profile?.name,
-        picture: user.profile?.picture
-      }
-    });
+    // Redirect to uploads page with just the token
+    const redirectUrl = `/uploads?token=${encodeURIComponent(user.accessToken)}`;
+    console.log('Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   }
 
-  @Post('logout')
+  @Get('logout')
   async logout(@Res() res: Response) {
-    res.clearCookie('session'); 
-    res.clearCookie('token');   
-    res.json({
-      message: 'Successfully logged out'
-    });
+    res.redirect('/');
   }
 }

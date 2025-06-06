@@ -25,10 +25,23 @@ export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
+    console.log('OAuth validate received profile:', profile);
+    
     // Store the token using the email as the key
     if (profile?.email) {
+      console.log('Storing token for email:', profile.email);
       this.tokenService.storeToken(profile.email, accessToken);
+    } else {
+      console.error('No email found in profile:', profile);
     }
-    return { accessToken, profile };
+    
+    return { 
+      accessToken, 
+      profile: {
+        email: profile.email,
+        name: profile.displayName,
+        picture: profile.photos?.[0]?.value
+      }
+    };
   }
 }

@@ -21,10 +21,25 @@ export class AccessTokenGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
-    const user = request.user;
-    if (!user?.profile?.email) {
+    const authHeader = request.headers.authorization;
+    const tokenFromQuery = request.query?.token as string;
+    
+    const accessToken = authHeader?.startsWith('Bearer ') 
+      ? authHeader.split(' ')[1] 
+      : tokenFromQuery;
+
+    if (!accessToken) {
+      console.log('No access token found');
+      const response = context.switchToHttp().getResponse();
+      response.redirect('/auth/login');
       return false;
-    }    const storedToken = this.tokenService.getToken(user.profile.email);
-    return storedToken === user.accessToken;
+    }
+
+    request.user = {
+      accessToken,
+      profile: {}
+    };
+
+    return true;
   }
 }

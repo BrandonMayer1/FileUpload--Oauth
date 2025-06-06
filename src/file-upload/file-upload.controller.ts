@@ -31,7 +31,6 @@ export class FileUploadController {
   getUploadForm(@Req() req: RequestWithSession, @Res() res: Response) {
     const isAuthenticated = req.isAuthenticated?.() || false;
     console.log('Home page - Auth state:', isAuthenticated);
-    console.log('Session:', req.session);
     
     res.send(`
       <!DOCTYPE html>
@@ -66,9 +65,16 @@ export class FileUploadController {
               border: none;
               border-radius: 4px;
               cursor: pointer;
+              margin: 5px;
             }
             button:hover {
               background-color: #45a049;
+            }
+            .view-files-btn {
+              background-color: #4285f4;
+            }
+            .view-files-btn:hover {
+              background-color: #357abd;
             }
           </style>
         </head>
@@ -81,13 +87,14 @@ export class FileUploadController {
               <button type="submit">Upload File</button>
             </form>
           </div>
+          <a href="/uploads"><button class="view-files-btn">All Files</button></a>
         </body>
       </html>
     `);
   }
 
   @Get('uploads')
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard) // Makes sure the user has a token
   getUploadedFiles(@Req() req: RequestWithSession, @Res() res: Response) {
     const uploadsDir = 'C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads';
     const files = readdirSync(uploadsDir);
