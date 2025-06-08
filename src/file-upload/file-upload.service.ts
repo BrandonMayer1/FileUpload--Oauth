@@ -5,7 +5,16 @@ export class FileUploadService {
   private readonly logger = new Logger(FileUploadService.name);
 
   handleFileUpload(file: Express.Multer.File) {
-    this.logger.log(`File saved at: ${file.path}`);
-    return { message: 'File uploaded successfully', filePath: file.path };
+    if (!file) {
+      this.logger.error('No file received');
+      throw new Error('No file received');
+    }
+
+    this.logger.log(`File uploaded: ${file.originalname}`);
+    return { 
+      message: 'File uploaded successfully', 
+      filename: file.originalname,
+      size: file.size
+    };
   }
 }

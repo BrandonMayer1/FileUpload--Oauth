@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { TokenService } from './token.service';
 
@@ -34,6 +34,9 @@ export class AccessTokenGuard implements CanActivate {
       response.redirect('/auth/login');
       return false;
     }
+
+    // Store the token using the token itself as the key
+    this.tokenService.storeToken(accessToken, accessToken);
 
     request.user = {
       accessToken,

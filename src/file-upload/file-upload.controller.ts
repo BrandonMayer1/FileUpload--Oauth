@@ -30,6 +30,7 @@ export class FileUploadController {
   @Get()
   getUploadForm(@Req() req: RequestWithSession, @Res() res: Response) {
     const isAuthenticated = req.isAuthenticated?.() || false;
+    const token = req.query?.token as string;
     console.log('Home page - Auth state:', isAuthenticated);
     
     res.send(`
@@ -44,6 +45,22 @@ export class FileUploadController {
               margin: 0 auto;
               padding: 20px;
               position: relative;
+            }
+            .auth-button {
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              background-color: #4285f4;
+              color: white;
+              padding: 10px 20px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              text-decoration: none;
+              display: inline-block;
+            }
+            .auth-button:hover {
+              background-color: #357abd;
             }
             .upload-container {
               border: 2px dashed #ccc;
@@ -79,6 +96,10 @@ export class FileUploadController {
           </style>
         </head>
         <body>
+          ${token 
+            ? '<a href="/auth/logout" class="auth-button">Logout</a>'
+            : '<a href="/auth/login" class="auth-button">Login with Google</a>'
+          }
           <h1>File Upload</h1>
           <div class="upload-container">
             <form action="/" method="post" enctype="multipart/form-data">
@@ -87,17 +108,18 @@ export class FileUploadController {
               <button type="submit">Upload File</button>
             </form>
           </div>
-          <a href="/uploads"><button class="view-files-btn">All Files</button></a>
+          <a href="/uploads${token ? `?token=${token}` : ''}"><button class="view-files-btn">View All Files</button></a>
         </body>
       </html>
     `);
   }
 
   @Get('uploads')
-  @UseGuards(AccessTokenGuard) // Makes sure the user has a token
+  @UseGuards(AccessTokenGuard)
   getUploadedFiles(@Req() req: RequestWithSession, @Res() res: Response) {
     const uploadsDir = 'C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads';
     const files = readdirSync(uploadsDir);
+    const token = req.query?.token as string;
     
     res.send(`
       <!DOCTYPE html>
@@ -162,7 +184,7 @@ export class FileUploadController {
               </li>
             `).join('')}
           </ul>
-          <a href="/">← Back to Upload</a>
+          <a href="${token ? `/?token=${token}` : '/'}">← Back to Upload</a>
         </body>
       </html>
     `);
@@ -176,9 +198,19 @@ export class FileUploadController {
   }
 
   @Post('')
-  @UseInterceptors(FileInterceptor('file'))
-  @Redirect('/')
-  async uploadFile(@UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('file', {
+    dest: './uploads/',
+    limits: {
+      fileSize: 1024 * 1024 * 5 // 5MB limit
+    }
+  }))
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request, @Res() res: Response) {
+    if (!file) {
+      return res.status(400).send('No file uploaded');
+    }
+    
     await this.fileUploadService.handleFileUpload(file);
+    const token = req.query?.token as string;
+    res.redirect(token ? `/?token=${token}` : '/');
   }
 }
