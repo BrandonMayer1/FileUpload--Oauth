@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-oauth2';
+import { Strategy } from 'passport-google-oauth20';
 import { TokenService } from './token.service';
 
 const clientID = process.env.GOOGLE_CLIENT_ID;
@@ -14,13 +14,10 @@ if (!clientID || !clientSecret) {
 export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
   constructor(private tokenService: TokenService) {
     super({
-      authorizationURL: 'https://accounts.google.com/o/oauth2/v2/auth?prompt=consent',
-      tokenURL: 'https://oauth2.googleapis.com/token',
       clientID: clientID as string,
       clientSecret: clientSecret as string,
       callbackURL: 'http://localhost:8080/auth/callback',
-      scope: ['profile', 'email'],
-      state: false
+      scope: ['profile', 'email']
     });
   }
 
@@ -28,9 +25,10 @@ export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
     console.log('OAuth validate received profile:', profile);
     
     // Store the token using the email as the key
-    if (profile?.email) {
-      console.log('Storing token for email:', profile.email);
-      this.tokenService.storeToken(profile.email, accessToken);
+    if (profile?.emails?.[0]?.value) {
+      const email = profile.emails[0].value;
+      console.log('Storing token for email:', email);
+      this.tokenService.storeToken(email, accessToken);
     } else {
       console.error('No email found in profile:', profile);
     }
@@ -38,7 +36,7 @@ export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
     return { 
       accessToken, 
       profile: {
-        email: profile.email,
+        email: profile.emails?.[0]?.value,
         name: profile.displayName,
         picture: profile.photos?.[0]?.value
       }

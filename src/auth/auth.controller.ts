@@ -25,8 +25,8 @@ export class AuthController {
       this.tokenService.storeToken(user.profile.email, user.accessToken);
     }
 
-    // Redirect to uploads page with just the token
-    const redirectUrl = `/uploads?token=${encodeURIComponent(user.accessToken)}`;
+    // Redirect back to root with the token
+    const redirectUrl = `/?token=${encodeURIComponent(user.accessToken)}`;
     console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   }
