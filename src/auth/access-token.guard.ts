@@ -22,11 +22,11 @@ export class AccessTokenGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const authHeader = request.headers.authorization;
-    const tokenFromQuery = request.query?.token as string;
+    const tokenFromCookie = request.cookies?.auth_token;
     
     const accessToken = authHeader?.startsWith('Bearer ') 
       ? authHeader.split(' ')[1] 
-      : tokenFromQuery;
+      : tokenFromCookie;
 
     if (!accessToken) {
       console.log('No access token found');
@@ -35,9 +35,16 @@ export class AccessTokenGuard implements CanActivate {
       return false;
     }
 
-    // Store the token using the token itself as the key
-    this.tokenService.storeToken(accessToken, accessToken);
+    // Verify the token exists
+    const storedToken = this.tokenService.getToken(accessToken);
+    if (!storedToken) {
+      console.log('Token not found in storage');
+      const response = context.switchToHttp().getResponse();
+      response.redirect('/auth/login');
+      return false;
+    }
 
+    // Set user info in the request
     request.user = {
       accessToken,
       profile: {}

@@ -16,6 +16,7 @@ import { Response, Request } from 'express';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 import { AccessTokenGuard } from 'src/auth/access-token.guard';
+import { TokenService } from 'src/auth/token.service';
 
 interface RequestWithSession extends Request {
   session: any;
@@ -25,12 +26,15 @@ interface RequestWithSession extends Request {
 
 @Controller('')
 export class FileUploadController {
-  constructor(private readonly fileUploadService: FileUploadService) {}
+  constructor(
+    private readonly fileUploadService: FileUploadService,
+    private readonly tokenService: TokenService
+  ) {}
 
   @Get()
   getUploadForm(@Req() req: RequestWithSession, @Res() res: Response) {
-    const isAuthenticated = req.isAuthenticated?.() || false;
-    const token = req.query?.token as string;
+    const token = req.cookies?.auth_token;
+    const isAuthenticated = !!token && !!this.tokenService.getToken(token);
     console.log('Home page - Auth state:', isAuthenticated);
     
     res.send(`
@@ -96,7 +100,7 @@ export class FileUploadController {
           </style>
         </head>
         <body>
-          ${token 
+          ${isAuthenticated 
             ? '<a href="/auth/logout" class="auth-button">Logout</a>'
             : '<a href="/auth/login" class="auth-button">Login with Google</a>'
           }
@@ -108,7 +112,7 @@ export class FileUploadController {
               <button type="submit">Upload File</button>
             </form>
           </div>
-          <a href="/uploads${token ? `?token=${token}` : ''}"><button class="view-files-btn">View All Files</button></a>
+          <a href="/uploads"><button class="view-files-btn">View All Files</button></a>
         </body>
       </html>
     `);
@@ -119,7 +123,6 @@ export class FileUploadController {
   getUploadedFiles(@Req() req: RequestWithSession, @Res() res: Response) {
     const uploadsDir = 'C:\\Users\\mayer\\OneDrive\\Desktop\\Yape-Internship\\uploads';
     const files = readdirSync(uploadsDir);
-    const token = req.query?.token as string;
     
     res.send(`
       <!DOCTYPE html>
@@ -184,7 +187,7 @@ export class FileUploadController {
               </li>
             `).join('')}
           </ul>
-          <a href="${token ? `/?token=${token}` : '/'}">← Back to Upload</a>
+          <a href="/">← Back to Upload</a>
         </body>
       </html>
     `);
@@ -210,7 +213,6 @@ export class FileUploadController {
     }
     
     await this.fileUploadService.handleFileUpload(file);
-    const token = req.query?.token as string;
-    res.redirect(token ? `/?token=${token}` : '/');
+    res.redirect('/');
   }
 }
