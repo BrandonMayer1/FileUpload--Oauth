@@ -4,15 +4,15 @@ import { Injectable } from '@nestjs/common';
 export class TokenService {
   private tokens: Map<string, string> = new Map();
 
-  storeToken(email: string, token: string) {
-    this.tokens.set(email, token);
+  storeToken(token: string, tokenValue: string) {
+    this.tokens.set(token, tokenValue);
   }
 
-  getToken(email: string): string | undefined {
-    return this.tokens.get(email);
+  getToken(token: string): string | undefined {
+    return this.tokens.get(token);
   }
 
-  removeToken(email: string) {
-    this.tokens.delete(email);
+  removeToken(token: string) {
+    this.tokens.delete(token);
   }
 } 

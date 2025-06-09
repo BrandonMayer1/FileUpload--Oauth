@@ -11,7 +11,6 @@ export class AuthController {
   @Get('login')
   @UseGuards(AuthGuard('oauth'))
   async login() {
-    // This route will redirect the user to the OAuth provider
   }
 
   @Get('callback')
@@ -20,19 +19,39 @@ export class AuthController {
     const user = req.user;
     console.log('OAuth callback received user:', user);
     
-    // Store the token
-    if (user?.profile?.email) {
-      this.tokenService.storeToken(user.profile.email, user.accessToken);
+    if (user?.accessToken) {
+      this.tokenService.storeToken(user.accessToken, user.accessToken);
+      
+      // Set the token in a cookie
+      res.cookie('auth_token', user.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      // Set user info in the request
+      req.user = {
+        accessToken: user.accessToken,
+        profile: user.profile
+      };
     }
 
-    // Redirect back to root with the token
-    const redirectUrl = `/?token=${encodeURIComponent(user.accessToken)}`;
-    console.log('Redirecting to:', redirectUrl);
-    res.redirect(redirectUrl);
+    // Redirect back to root
+    res.redirect('/');
   }
 
   @Get('logout')
-  async logout(@Res() res: Response) {
+  async logout(@Req() req, @Res() res: Response) {
+    const token = req.cookies?.auth_token;
+    if (token) {
+      this.tokenService.removeToken(token);
+      res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    }
     res.redirect('/');
   }
 }
